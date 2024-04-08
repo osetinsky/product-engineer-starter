@@ -1,0 +1,25 @@
+.animate-check {
+    animation: pulse-check 0.5s ease-in-out;
+}
+
+@keyframes pulse-check {
+    0% {
+        transform: scale(1);
+    }
+
+    25% {
+        transform: scale(0.9);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    75% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}

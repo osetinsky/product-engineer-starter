@@ -25,7 +25,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     const [medicalRecord, setMedicalRecord] = useState<IUploadedFile | null>(null);
     const [guidelinesFile, setGuidelinesFile] = useState<IUploadedFile | null>(null);
 
-    const value = { medicalRecord, setMedicalRecord, guidelinesFile, setGuidelinesFile }; 
+    const value = { medicalRecord, setMedicalRecord, guidelinesFile, setGuidelinesFile };
 
     return (
         <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>
