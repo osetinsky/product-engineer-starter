@@ -1,1 +1,8 @@
-fastapi==0.105.0
+fastapi
+uvicorn
+gunicorn
+sqlalchemy
+psycopg2-binary
+databases
+alembic
+python-dotenv
