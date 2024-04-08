@@ -9,16 +9,43 @@ import classNames from "classnames";
 
 export const revalidate = 0;
 
+const isProduction = process.env.NEXT_PUBLIC_NODE_ENV === 'production';
+const protocol = isProduction ? 'https' : 'http';
+const serverUrl = `${protocol}://${process.env.NEXT_PUBLIC_SERVER_HOST}:${process.env.NEXT_PUBLIC_SERVER_PORT}`
+
 export default function DashboardRoot() {
     const router = useRouter();
     const { medicalRecord, guidelinesFile } = useDashboard();
 
-    const CASE_ID = "case_891a_6fbl_87d1_4326";
-
-    const handleContinue = () => {
-        router.push(`/dashboard/case/${CASE_ID}`)
-    }
-
+    const handleContinue = async () => {
+        if (bothFilesUploaded) {
+            // Next step is to either use formData or encoding to pass uploaded PDFs for medicalRecord and guidelinesFile
+            // const formData = new FormData();
+            // formData.append('medical_record', medicalRecord.file); // Assuming medicalRecord.file is the File object for the upload
+            // formData.append('guidelines_file', guidelinesFile.file); // Similarly for guidelinesFile, or use encoding instead of formData
+    
+            try {
+                const response = await fetch(`${serverUrl}/cases`, {
+                    mode: 'cors', // Specify CORS mode for request to server
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    // body: formData,
+                });
+    
+                if (response.ok) {
+                    const data = await response.json();
+                    router.push(`/dashboard/case/${data.case_id}`);
+                } else {
+                    console.error('Failed to create case:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+        }
+        }
+    };
+   
     const bothFilesUploaded = medicalRecord?.url && guidelinesFile?.url;
 
     return (
