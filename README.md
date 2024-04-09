@@ -1,6 +1,7 @@
 # Co:Helm Exploration
+![cohelm-logo](https://github.com/osetinsky/product-engineer-starter/assets/1250151/75cddd4f-cc80-4a9d-bf8a-72bce207ee28)
 
-Hi Co:Helm team! I appreciate you giving me the chance to demo my work. It's an interesting problem.
+Hi Co:Helm team! I appreciate you giving me the chance to demo my work. I think you're working on interesting problems worth solving.
 
 I've focused most of my time on the backend aspects of the specs your team provided [here](https://co-helm.notion.site/Senior-Product-Engineer-Take-Home-6e82ec45cc2a46b59a0d9ee3aeb9449c).
 
@@ -15,8 +16,7 @@ Thanks for checking it out! Please don't hesitate to reach out with questions.
 ## Usage
 
 ### Loom Demo
-Watch this screencast to see the steps below in action.
-[todo: add link]
+Watch this [screencast](https://www.loom.com/share/5d0295bd90724ba69157dbff91834632?sid=82501788-f504-427f-a1da-e64481fb9db0) to see how to run and test.
 
 ### Prerequisites
 
@@ -39,6 +39,9 @@ Note that `make start` wraps up most of the detailed steps below into one helper
 
 ### Detailed Steps
 #### Setup & Build
+
+<img width="1124" alt="docker" src="https://github.com/osetinsky/product-engineer-starter/assets/1250151/447bd1a3-b7c7-430a-82a5-3e1d16abcd86">
+
 
 To get your development environment up and running:
 
