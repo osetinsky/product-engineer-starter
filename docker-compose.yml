@@ -28,11 +28,9 @@ services:
       - backend
     ports:
       - "${CLIENT_PORT}:${CLIENT_PORT}"
-    environment:    # Add environment variables here
+    environment:
       NEXT_PUBLIC_SERVER_HOST: ${NEXT_PUBLIC_SERVER_HOST}
       NEXT_PUBLIC_SERVER_PORT: ${NEXT_PUBLIC_SERVER_PORT}
-    # volumes:
-    #   - ./frontend:/code
 
 volumes:
   postgres_data:
