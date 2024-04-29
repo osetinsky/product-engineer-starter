@@ -17,6 +17,8 @@ services:
       - .env
     depends_on:
       - db
+    volumes:
+      - ./backend:/code
     ports:
       - "${NEXT_PUBLIC_SERVER_PORT}:${NEXT_PUBLIC_SERVER_PORT}"
 

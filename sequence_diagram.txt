@@ -1,0 +1,93 @@
+fontawesome6regular f0f8 Nurse #blue
+
+participant CoHelmWeb #lightgreen
+entity CoHelmAPI #green
+database CoHelmPG #grey
+
+entity CoHelmSQS #black
+entity CoHelmWorker #darkgreen
+
+fontawesome6regular f1c5 CaseAssetsS3 #lightblue
+entity OpenAI #yellow
+
+entryspacing 0.9
+group files_uploaded?
+Nurse->CoHelmWeb: Upload medical_record.pdf
+
+Nurse->CoHelmWeb: Upload guidelines.pdf
+end
+
+note over CoHelmWeb,CoHelmAPI #pink: Do not base64 encode b/c we want to:\n(a) store on S3 (HIPPA/PII?) and binary consumes less space\n(b) checksum the raw contents for ID'ing, and \n(c) convert the raw PDF to jpeg/png for processing
+
+CoHelmWeb->CoHelmAPI: POST cases (Upload raw PDF files)
+note over CoHelmAPI: Discuss where checksum generation should happen\nUsually should not trust the client, but would save processing/time
+CoHelmAPI-->CoHelmAPI: generate checksums for each PDF\nmr_<checksum>.pdf\ngl_<checksum>.pdf
+
+note over CoHelmAPI,CoHelmPG #pink: [Assumes guidelines/medical_record combo is 1/1 w/case]
+CoHelmAPI->CoHelmPG: UPSERT case by mr_checksum, gl_checksum\n(composite index <mr_checksum,gl_checksum>)
+
+alt no_case_record by composite index
+CoHelmPG-->CoHelmPG: Generate case_id (UUID), store checksum values\nstatus: submitted
+
+CoHelmAPI->CaseAssetsS3: Upload Medical Record & Guidelines PDFs to S3\nboto_client.upload(*.pdf, s3://cases/<case_id>/)
+
+alt s3 upload fails
+CaseAssetsS3->CoHelmAPI: S3 upload failure
+CoHelmAPI->CoHelmPG: UPDATE cases SET status: failed
+else
+CaseAssetsS3->CoHelmAPI: S3 upload success
+CoHelmAPI->CoHelmSQS: queue message with case_id
+CoHelmSQS->CoHelmWorker: dequeue message with case_id for processing
+
+CoHelmWorker->CaseAssetsS3: s3 get_object (Fetch PDFs by case_id)
+CaseAssetsS3->CoHelmWorker: return PDFs [medical_record, guidelines]
+
+
+note over CoHelmWorker #gold: Convert PDFs to Markdown
+loop medical_record, guidelines
+CoHelmWorker->CoHelmWorker: pdf2image converts each PDF page to a base64 encoded jpeg
+loop for each base64 jpeg
+CoHelmWorker->OpenAI: Prompt for conversion to markdown
+OpenAI->CoHelmWorker: Return markdown for document page
+CoHelmWorker->CoHelmWorker: Temporarily store paginated markdown file
+end
+CoHelmWorker->CoHelmWorker: Concatenate separate markdown files into a single markdown file representing original PDF
+
+end
+
+CoHelmWorker->CaseAssetsS3: Upload medical_record.md, guidelines.md\n(useful to avoid reprocessing / OpenAI costs)
+CaseAssetsS3->CoHelmWorker: (Assume success for now)
+
+note over CoHelmWorker #gold: Extract and Populate Metadata:\nprocedure_name\ncpt_codes\n
+
+note over CoHelmWorker #gold: Step-by-step RAG/AI Analysis of Markdown Files:\nlangchain\nopenai\ntiktoken\nfaiss-gpu\n
+group analysis
+note over CoHelmWorker #pink: how do add deterministic start/break points around\nINSTRUCTIONS if guidelines files can vary?
+CoHelmWorker->CoHelmWorker: Parse INSTRUCTIONS from guidelines.md\nDiscuss a deterministic way to do this
+loop INSTRUCTIONS
+CoHelmWorker->CoHelmWorker: utilize RAG to make determination for each step in INSTRUCTIONS\nfrom guidelines.md based on medical_record.md:\nreasoning, evidence, decision, next_step, etc.
+
+CoHelmWorker<-->OpenAI: [lots to discuss here]
+CoHelmWorker->CoHelmWorker: append step to "steps" in analysis data blob
+end
+note over CoHelmWorker #pink: While we could UPDATE the DB record in CoHelmPG\nupon each step determination, we probably should wait\nuntil the full process completes without unexpected errors.\nFurthermore, we may want to run the RAG/AI determination\nin separate, parallel processes to ensure they all reach the\nsame determination (albeit with different textual analyses)
+
+CoHelmWorker->CoHelmWorker: Make final determination (is_met) and summary\nDesign dedicated AI agent for self-review/reflection\nup to this point using the pending analysis\nis_met = ?\nsummary = ?\nis_complete =?
+
+note over CoHelmWorker #lightgreen: Based on the analysis, we could 
+end
+
+
+
+
+note over CoHelmAPI,CoHelmPG: This async approach will prevent us from\nimmediately responding with CPT codes,\nbut they will show up early in polling
+CoHelmPG->CoHelmAPI: Return case_id
+CoHelmAPI->CoHelmWeb: Return case_id
+CoHelmWeb->CoHelmAPI: GET cases/<case_id>
+CoHelmAPI->CoHelmPG: SELECT * FROM cases WHERE case_id = ? LIMIT 1;
+
+CoHelmPG->CoHelmAPI: Return case
+note over CoHelmAPI,CoHelmPG #pink: Discuss pros/cons of storing case as JSON blob vs. as columns
+CoHelmAPI->CoHelmWeb: Serialize case
+
+CoHelmWorker->CoHelmPG:UPDATE cases SET analysis = analysis::jsonb WHERE case_id = ?;

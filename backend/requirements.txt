@@ -6,3 +6,9 @@ psycopg2-binary
 databases
 alembic
 python-dotenv
+pytesseract
+Pillow
+pdf2image
+PyMuPDF
+medspacy
+openai
